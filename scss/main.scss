@@ -1,0 +1,70 @@
+
+html > body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+
+body > header {
+    background: #311B50 url("/img/affectv-logo.png") no-repeat fixed calc(100% - 30px) 5px;
+    //background: #311B50 url("/product-img/blueray.jpeg") no-repeat fixed top;
+    height: 60px;
+    color: white;
+    font-size: 30px;
+    line-height: 60px;
+    padding-left:30px;
+}
+button:focus {outline:0;}
+
+#ad-generator {
+    padding: 20px;
+    #ad-controls,
+    #ad-rendered {
+        width: 50%;
+        float: left;
+        overflow: hidden;
+        preview {
+            border: 1px solid black;
+            width: 300px;
+            height: 250px;
+            display: block;
+        }
+    }
+    #ad-controls{
+        label{
+            font-size: 12px;
+        }
+        .sample-color{
+            display: inline-block;
+        }
+        div.style-input {
+            padding: 5px 0px;
+        }
+        .style-input label {
+            text-transform: capitalize;
+        }
+        #ad-controls-submit {
+            padding: 10px;
+            button {
+                border-radius: 16px;
+                padding: 10px 20px;
+                color: white;
+                background-color: green;
+                text-transform: uppercase;;
+            }
+            button:hover {
+                pointer: hand;
+                box-shadow: 0 3px 3px 0 rgba(0,0,0,0.24), 0 5px 10px 0 rgba(0,0,0,0.19);
+            }
+        }
+    }
+    .sample-color{
+        width: 15px;
+        height: 15px;
+        border: 1px solid black;
+        border-radius: 3px;
+    }
+
+
+}
+

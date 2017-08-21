@@ -1,0 +1,327 @@
+<!doctype html>
+<html ng-app="DynamicAdHTMLGenerator">
+
+<head>
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
+    <script src="js/app.js"></script>
+    <script type="text/JavaScript">
+        (function () {
+            const adWidth = "300";
+            const adHeight = "250";
+            const toDataURL = url => fetch(url)
+                .then(response => response.blob())
+                .then(blob => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob)
+                }));
+            const returnHTML = (product, image)=>{
+                return '<div class="product-container product">\n' +
+                    '     <figure class="product-image-container">\n' +
+                    '       <img src="'+image+'"  alt="Smiley face">\n' +
+                    '     </figure>\n' +
+                    '     <div class="product-info-box-container"> \n' +
+                    '        <div class="product-info-box">\n' +
+                    '          <header>\n' +
+                    '           <h1 class="product-title">'+product.name+'</h1>\n' +
+                    '          </header>\n' +
+                    '        <div class="product-link-button"><a href="'+product.link+'"><button class="link-button">BUY NOW</button></a></div>\n' +
+                    '     </div>\n' +
+                    '     </div>\n' +
+                    '   </div>'
+            };
+
+            var DynamicAdHTMLGenerator = angular.module("DynamicAdHTMLGenerator", []);
+
+            DynamicAdHTMLGenerator.controller("Controller", ["$scope","$http","$q", function ($scope, $http, $q) {
+                $scope.base64 = false;
+
+                // can add extra add properties to fill in
+                $scope.adProperties = {
+                    "product_info_box": {
+                        "background": [{
+                            name: "color",
+                            type: "text",
+                            value: "white"
+                        }],
+                        "text": [{
+                            name: "color",
+                            type: "text",
+                            value: "black"
+                        }],
+                        "border": [{
+                                name: "style",
+                                type: "text",
+                                value: "solid"
+                            },{
+                                name: "width",
+                                type: "number",
+                                append:"px",
+                                value: 5
+                            },
+                            {
+                                name: "color",
+                                type: "text",
+                                value: "black"
+                            },
+                            {
+                                name: "radius",
+                                type: "number",
+                                append:"px",
+                                value: 20
+                            }]
+                    },
+                    "link_button": {
+                        "background": [{
+                            name: "color",
+                            type: "text",
+                            value: "grey"
+                        }],
+                        "text": [{
+                            name: "color",
+                            type: "text",
+                            value: "black"
+                        }]
+                    }
+                }
+
+                $scope.submit = function() {
+                    // get the products api
+                     $http.get('api/products.json').success(function(data) {
+                         try {
+                             if(data.status === "success") {
+                                 // Check that there is data available
+                                 if ((data.data.products).length > 0) {
+
+                                     // get the styles for the advert
+                                     $http.get('css/ad.css').success(function(css) {
+                                         let productCount = data.data.products.length;
+                                         let customStyles = $scope.adProperties;
+                                         let html = '';
+
+                                         var promises = [];
+
+                                         // loop through products to set up html
+                                         var promises = (data.data.products).map(function(product) {
+
+                                             css += "#ad-container .table{ width: "+(productCount+adWidth)+";  }";
+
+                                             for (let [key, styleGroup] of Object.entries(customStyles)) {
+                                                 var styleBlock = '';
+                                                 for (let [key2, stylesArray] of Object.entries(styleGroup)) {
+                                                     for (let style of stylesArray){
+                                                         styleBlock += ((key2 !== 'text' || style.name !== 'color') ? key2 : 'color') + ((key2 !== 'text' || style.name !== 'color') ? '-' + style.name : '') + ': ' + style.value + (style.append || '') + ';\n';
+                                                     }
+                                                 }
+                                                 css += '\n.' + (key.replace(/_/g,"-")) + ' { \n' +
+                                                     styleBlock +
+                                                     '}  \n ';
+                                             }
+
+                                             // return bas64 version of image if checkbox checked
+                                             if($scope.base64){
+                                                 return toDataURL(product.img).then(function(image){
+                                                     html += returnHTML(product,image);
+                                                 });
+                                             }else{
+                                                 html += returnHTML(product,product.img);
+                                                 return true;
+                                             }
+                                         })
+
+                                         return $q.all(promises).then(function(){
+                                             $scope.content = [html,css, productCount];
+                                         });
+
+                                     })
+                                     .error(function(error){
+                                         //error handler function for style did not load
+                                         alert("Something went wrong with fetching the stylesheet: ", error);
+                                     });
+                                 }else{
+                                     throw "No products available to build adverts.";
+                                 }
+                             }else{
+                                 throw "error returning data";
+                             }
+                         }
+                         catch (error) {
+                             alert("Something went wrong : ", error);
+                         }
+
+                    }).error(function(error){
+                        //error handler function for json advert did not load
+                         alert("Something went wrong with fetching the api: ", error);
+                    });
+                }
+
+                $scope.viewSource = function(sourceCode){
+                    $scope.contentText = sourceCode;
+                }
+
+                $scope.htmlContent = '';
+
+
+            }]);
+
+            DynamicAdHTMLGenerator.directive("previewText", function () {
+                return {
+                    restrict: "E",
+                    scope: {
+                        onsort: '='
+                    }
+                };
+            })
+
+            DynamicAdHTMLGenerator.directive("preview", function () {
+
+                function link(scope, element) {
+                    //listen for a change in the content the build the iframe
+                    scope.$watch('content', function () {
+                        if(scope.content){
+                            // if iFrame already exists remove it before creating a new one.
+                            var frame = document.getElementById("productAdIframe");
+                            if(frame){
+                                frame.parentNode.removeChild(frame);
+                            }
+
+                            let iframe = document.createElement('iframe');
+                            iframe.frameBorder = 0;
+                            iframe.width = adWidth + "3px";
+                            iframe.height = adHeight + "px";
+                            iframe.id="productAdIframe";
+                            let element0 = element[0];
+                            element0.appendChild(iframe);
+                            let head = iframe.contentDocument.head;
+                            let body = iframe.contentDocument.body;
+                            let style = iframe.contentWindow.document.createElement("style");
+                            let base = iframe.contentWindow.document.createElement("base");
+                            let script = iframe.contentWindow.document.createElement("script");
+
+                            base.target = "_blank";
+
+                            script.type = "text/javascript";
+                            script.innerHTML = 'var startPosition = 0,\n' +
+                                '            moveX = 0;\n' +
+                                '\n' +
+                                '        function arrow_clicked(direction) {\n' +
+                                '            if(direction === "right" && startPosition > -'+adWidth*(scope.content[2]-1)+' ){\n' +
+                                '               moveX = -'+adWidth+';\n' +
+                                '            }else if(direction === "left" && startPosition<0){\n' +
+                                '                moveX = '+adWidth+';\n' +
+                                '            }else{\n' +
+                                '                moveX = 0;\n' +
+                                '            }\n' +
+                                '\n' +
+                                '            startPosition = startPosition + parseInt(moveX);\n' +
+                                '\n' +
+                                '            var style = document.getElementById("product-table").style;\n' +
+                                '            style.webkitTransform =\'translateX(\'+startPosition+\'px)\';\n' +
+                                '        }\n';
+
+                            innerHTML = '<div id="ad-container">\n' +
+                                '       <div id="arrow-left" onclick="arrow_clicked(\'left\')" class="arrow  active"><div>&lt;</div></div>\n' +
+                                '         <div id="product-table" class="table">\n' +
+                                '            <div class="row">\n' +
+                                '               <div class="product-table-cell">';
+                            innerHTML += scope.content[0];
+                            innerHTML += '    </div>\n' +
+                                '       </div>\n' +
+                                '      </div>\n' +
+                                '      <div id="arrow-right" onclick="arrow_clicked(\'right\')" class="arrow  active"><div>&gt;</div></div>\n' +
+                                '    </div>';
+
+                            style.innerHTML = scope.content[1];
+                            head.appendChild(style);
+                            head.appendChild(base);
+                            body.innerHTML = innerHTML;
+                            iframe.contentWindow.document.body.appendChild(script);
+
+                            scope.$parent.viewSource(iframe.contentWindow.document.documentElement.outerHTML);
+                        }
+
+                    });
+
+                }
+                return {
+                    link: link,
+                    restrict: 'E',
+                    scope: {
+                        content: '=',
+                    }
+                };
+            });
+        }());
+    </script>
+
+</head>
+
+<body ng-controller="Controller">
+    <header>Dynamic Ad Creator</header>
+    <div id="ad-generator">
+        <div id="ad-controls">
+            <form name="adPropertiesForm">
+                <h1>Properties:</h1>
+                <div id="base64">
+                    <h2>Images</h2>
+                    <div class="style-input">
+                        <label>Convert Images into Base64</label>
+                        <input ng-model="base64" type='checkbox' name="base64" value="true">
+                    </div>
+                </div>
+                <ng-container ng-repeat="(key,AdControls) in adProperties">
+                    <div id="{{key.toLowerCase().split('_').join('-')}}">
+                        <h2>{{key.split('_').join(' ')}}:</h2>
+                        <ng-container ng-repeat="(key2,properties) in AdControls">
+
+                            <ng-container ng-repeat="(key3,property) in properties">
+                                <div class="style-input">
+                                    <label ng-attr-for="{{key + key2 + property.name}}">{{key2}} {{property.name}}: </label>
+                                    <ng-container ng-if="property.type ==='text'">
+                                        <input ng-class="{{form[key + key2 + property.name].$valid}}"
+                                               type="text"
+                                               ng-attr-name="{{ key + key2 + property.name}}"
+                                               ng-keyup="inputStyle={'background-color':adProperties[key][key2][key3].value} "
+                                               ng-model="property.value">
+                                        <div ng-if="property.name==='color'" class="sample-color" ng-style="inputStyle"></div>
+                                    </ng-container>
+                                    <ng-container ng-if="property.type ==='number'">
+                                        <input ng-attr-name="{{ key + key2 + property.name}}"
+                                               type="number"
+                                               ng-model="property.value">
+                                        <span ng-if="property.append">{{property.append}}</span>
+                                        <span ng-model="property.append"></span>
+                                    </ng-container>
+                                </div>
+                            </ng-container>
+
+                        </ng-container>
+                    </div>
+                </ng-container>
+                <div id="ad-controls-submit">
+                    <button md-raised-button ng-click="submit()">Get Product Feed and Generate Ad</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="ad-rendered">
+            <div id="ad-preview-container">
+                <h1>Preview:</h1>
+
+                <preview  content="content"></preview>
+            </div>
+            <div id="ad-html">
+                <h1>HTML:</h1>
+
+                <div id="html-content">
+                    <textarea rows="10" id="textarea" cols="50" ng-bind="contentText">
+                    </textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

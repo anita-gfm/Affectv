@@ -1,0 +1,27 @@
+{
+  "name": "front-end-exercise",
+  "version": "0.0.1",
+  "description": "Affectv Front End Test",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Anita Dreosti",
+  "license": "ISC",
+  "devDependencies": {
+    "browser-sync": "^2.18.13",
+    "gulp": "^3.9.1",
+    "gulp-connect": "^4.2.0",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-main-bower-files": "^1.6.2",
+    "gulp-sass": "^3.1.0"
+  },
+  "dependencies": {
+    "del": "^3.0.0",
+    "events-stream": "^0.2.0",
+    "gulp-print": "^2.0.1",
+    "module": "^1.2.5",
+    "q": "^1.5.0",
+    "q-": "0.0.0"
+  }
+}
