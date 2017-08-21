@@ -1,3 +1,4 @@
+
 # Affectv Front-End Exercise
 
 ## What to do?
@@ -116,3 +117,4 @@ Please feel free to modify **any** of the files of this exercise.
 * The app should work in a modern Chrome browser.
 * Please feel free to include/change/reuse/invent any other framework/library/piece-of-code you think will be useful for those purposes.
 * BONUS (in no special order): Testing, NodeJS version of the API, Improved Ad design, Improved App UI design, More CSS controls, Improved build tasks, JS/CSS preprocessing, CSS animations, Multiple Ad-Designs....
+
